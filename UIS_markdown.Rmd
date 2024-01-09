@@ -1,0 +1,54 @@
+---
+title: "UIS Drug Treatment Study"
+author: "Lallen Johnson"
+date: "`r Sys.Date()`"
+output: html_document
+---
+```{r , include=FALSE} 
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+```
+
+The [UIS Drug Treatment Study](https://vincentarelbundock.github.io/Rdatasets/doc/quantreg/uis.html) randomly assigned 628 persons addicted to drugs to shorter (control) or longer (intervention) treatment programs. Complete data are available for 575 observations. We want to know if the time to relapse is significantly different for those two groups.
+
+```{r setup}
+uis <- read.csv('https://vincentarelbundock.github.io/Rdatasets/csv/quantreg/uis.csv')
+ls(uis) #lists variables in your dataframe
+```
+
+The average time to relapse for all participants was about 242 days.
+```{r overall relapse time}
+mean(uis$TIME)
+```
+
+## Plot overall distribution of relapse time
+The overall time to relapse distribution is bimodal. Relapse peaks about 100 days after treatment completion and again about 500 days after completion. 
+```{r overall relpase time plot}
+library(ggplot2)
+library(hrbrthemes)
+relapseplot <- ggplot(uis, aes(x=TIME)) + geom_density(fill="#69b3a2", color="#e9ecef", alpha=0.8) + ggtitle("Time to Drug Relapse") + labs(x="Days", y="Density")+ theme_ipsum()
+relapseplot
+```
+
+## Distribution of relapse time by treatment and control group
+The general distribution for relapse time is similar across those who received short and long drug treatment. But those who received long treatment were less likely than the short treatment group to relapse around 100 days post-release. Instead, they are slightly *more* likely than the short treatment group to relapse about 500 days after treatment completion.
+```{r bivariate density plot}
+uis$TREAT1 <- factor(uis$TREAT, levels=c(0,1), labels = c('Short', 'Long')) #gotta tell R that TREAT is a factor variable
+relapseplot1 <- ggplot(uis, aes(x=TIME, fill = TREAT1)) + geom_density(alpha=.4) + labs(title="Time to Drug Relapse by Group", x = "Days", y = "Density", fill = "Treatment") + theme_ipsum() 
+relapseplot1
+```
+
+## t-tests
+T-tests of time to treatment completion indicate the means for the short and long groups are statistically significantly different from one another. Absent controlling for other relevant variables (which is extremely important!), this suggests that longer term drug treatment delays the occurrence of drug relapse after completion. 
+
+### Base R
+```{r t-test base r}
+t.test(TIME ~ TREAT, data = uis)
+```
+### Tidyverse
+```{r t-test tidyverse}
+library(tidyverse)
+uis %>%
+  select(TREAT, TIME) %>%
+  filter(TREAT %in% c(0,1)) %>%
+  t.test(TIME ~ TREAT, data = .)
+```
